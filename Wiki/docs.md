@@ -101,6 +101,9 @@ Content-Type: application/json
 | `ActualAmount` | decimal | 是 | 法币金额，必须大于 0，币种由 `BaseCurrency` 决定。业务侧建议保留两位小数。 |
 | `Currency` | string | 是 | 完整币种标识，例如 `TRX`、`USDT_TRC20`、`EVM_BSC_BNB`。 |
 | `PassThroughInfo` | string | 否 | 透传信息，会在查单和回调中原样返回。不要放入密钥。 |
+| `IsCustomAmount` | decimal | 否 | 是否允许动态金额，仅允许启用动态收款地址时使用。v1.2.0起支持 |
+| `MinCustomAmount` | decimal | 否 | 动态金额下限制最小金额，低于此金额的付款会被忽略。v1.2.0起支持 |
+| `MaxCustomAmount` | decimal | 否 | 动态金额下限制最大金额，高于此金额的付款会被忽略。v1.2.0起支持 |
 | `NotifyUrl` | string | 否 | 支付成功异步通知地址，生产环境应使用 HTTPS。 |
 | `RedirectUrl` | string | 否 | 支付完成或订单过期后的前端跳转地址。它不是支付结果依据。 |
 | `Signature` | string | 是 | 请求签名。默认在所有环境校验；仅非 Production 环境显式配置 `Signature:AllowInsecureDevelopment=true` 时跳过。 |

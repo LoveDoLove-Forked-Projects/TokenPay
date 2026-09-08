@@ -34,10 +34,10 @@ namespace TokenPay.BgServices
         {
             var _repository = freeSql.GetRepository<TokenOrders>();
             var _TokensRepository = freeSql.GetRepository<Tokens>();
-
+            const string Currency = "USDT_TRC20";
             var Address = await _repository
                 .Where(x => x.Status == OrderStatus.Pending)
-                .Where(x => x.Currency == "USDT_TRC20")
+                .Where(x => x.Currency == Currency)
                 .Distinct()
                 .ToListAsync(x => x.ToAddress);
             var ContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
@@ -54,7 +54,7 @@ namespace TokenPay.BgServices
                 //查询此地址待支付订单
                 var orders = await _repository
                     .Where(x => x.Status == OrderStatus.Pending)
-                    .Where(x => x.Currency == "USDT_TRC20")
+                    .Where(x => x.Currency == Currency)
                     .Where(x => x.ToAddress == address)
                     .OrderBy(x => x.CreateTime)
                     .ToListAsync();
@@ -140,6 +140,19 @@ namespace TokenPay.BgServices
                                         goto recheck;
                                     }
                                 }
+                            }
+                        }
+                        if (order == null)
+                        {
+                            //已启用动态金额的订单
+                            order = orders.Where(x => x.IsCustomAmount && x.ToAddress == item.To && x.CreateTime < item.BlockTimestamp.ToDateTime())
+                                .Where(x => x.MinCustomAmount == null || x.MinCustomAmount <= item.Amount)
+                                .Where(x => x.MaxCustomAmount == null || x.MaxCustomAmount >= item.Amount)
+                                .OrderByDescending(x => x.CreateTime)//优先付最后一单
+                                .FirstOrDefault();
+                            if (order != null)
+                            {
+                                goto recheck;
                             }
                         }
                     }

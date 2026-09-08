@@ -130,6 +130,19 @@ namespace TokenPay.BgServices
                                     }
                                 }
                             }
+                            if (order == null)
+                            {
+                                //已启用动态金额的订单
+                                order = orders.Where(x => x.IsCustomAmount && x.ToAddress.ToLower() == item.To.ToLower() && x.CreateTime < item.DateTime)
+                                .Where(x => x.MinCustomAmount == null || x.MinCustomAmount <= RealAmount)
+                                .Where(x => x.MaxCustomAmount == null || x.MaxCustomAmount >= RealAmount)
+                                    .OrderByDescending(x => x.CreateTime)//优先付最后一单
+                                    .FirstOrDefault();
+                                if (order != null)
+                                {
+                                    goto recheck;
+                                }
+                            }
                         };
                         #endregion
 

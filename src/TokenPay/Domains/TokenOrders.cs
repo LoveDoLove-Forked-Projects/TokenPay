@@ -69,6 +69,19 @@ namespace TokenPay.Domains
         [Column(StringLength = -1)]
         public string? PassThroughInfo { get; set; }
         /// <summary>
+        /// 是否动态金额订单[仅动态地址模式下可用]
+        /// </summary>
+        public bool IsCustomAmount { get; set; }
+        /// <summary>
+        /// 最低接受金额，可为空，为空则不限制
+        /// </summary>
+
+        public decimal? MinCustomAmount { get; set; }
+        /// <summary>
+        /// 最高接受金额，可为空，为空则不限制
+        /// </summary>
+        public decimal? MaxCustomAmount { get; set; }
+        /// <summary>
         /// 异步通知Url
         /// </summary>
         public string? NotifyUrl { get; set; }

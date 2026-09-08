@@ -1,15 +1,15 @@
 using Flurl.Http;
 using Flurl.Http.Newtonsoft;
 using FreeSql;
-using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Serilog;
 using Serilog.Events;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.InteropServices;
@@ -57,6 +57,16 @@ Log.Information("LatencyMode: {value}", GCSettings.LatencyMode);
 
 var builder = WebApplication.CreateBuilder(args);
 var Services = builder.Services;
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.ForwardLimit = 1;
+
+    options.KnownProxies.Add(IPAddress.Loopback);
+    options.KnownProxies.Add(IPAddress.IPv6Loopback);
+    options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+});
 var Configuration = builder.Configuration;
 Configuration.AddJsonFile("EVMChains.json", optional: true, reloadOnChange: true);
 if (!builder.Environment.IsProduction())
@@ -98,7 +108,11 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
                     .WriteTo.File("logs/log-.log", rollingInterval: RollingInterval.Day)
                     .WriteTo.Console()
                     );
-var mvcBuilder = builder.Services.AddControllersWithViews()
+Services.Configure<RazorViewEngineOptions>((options) =>
+ {
+     options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(Configuration, builder.Environment));
+ });
+var mvcBuilder = Services.AddControllersWithViews()
     .AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix)
     .AddJsonOptions(o =>
     {
@@ -172,13 +186,34 @@ if (builder.Environment.IsDevelopment())
 Services.Configure<RequestLocalizationOptions>(options =>
 {
     var supportedCultures = new List<CultureInfo>
-            {
-                new CultureInfo("en"),
-                new CultureInfo("zh"),
-                new CultureInfo("ru")
-            };
+    {
+        new("en"),     // English / 英语
+        new("zh"),     // Chinese / 中文
+        new("hi"),     // Hindi / 印地语
+        new("ur"),     // Urdu / 乌尔都语
+        new("vi"),     // Vietnamese / 越南语
+        new("pt"),     // Portuguese / 葡萄牙语
+        new("es"),     // Spanish / 西班牙语
+        new("ru"),     // Russian / 俄语
+        new("id"),     // Indonesian / 印度尼西亚语
+        new("uk"),     // Ukrainian / 乌克兰语
+        new("tl"),     // Filipino (Tagalog) / 菲律宾语（他加禄语）
+        new("tr"),     // Turkish / 土耳其语
+        new("ko"),     // Korean / 韩语
+        new("th"),     // Thai / 泰语
+        new("ja"),     // Japanese / 日语
+        new("bn"),     // Bengali / 孟加拉语
+        new("ar"),     // Arabic / 阿拉伯语
+        new("de"),     // German / 德语
+        new("fr"),     // French / 法语
+        new("it"),     // Italian / 意大利语
+        new("nl"),     // Dutch / 荷兰语
+        new("pl"),     // Polish / 波兰语
+        new("cs"),     // Czech / 捷克语
+        new("ro"),     // Romanian / 罗马尼亚语
+    };
 
-    options.SetDefaultCulture(supportedCultures[0].Name);
+    options.SetDefaultCulture("en");
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
 });
@@ -199,7 +234,7 @@ if (!string.IsNullOrEmpty(WebProxy))
 
 
 var app = builder.Build();
-
+app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/error");
@@ -235,6 +270,7 @@ app.UseRequestLocalization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapGet("/ip", (HttpContext context) => Results.Ok(new { RemoteIp = context.Connection.RemoteIpAddress?.ToString() }));
 try
 {
     Log.Information("Starting web host");

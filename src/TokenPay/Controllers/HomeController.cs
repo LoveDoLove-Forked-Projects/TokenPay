@@ -224,12 +224,31 @@ namespace TokenPay.Controllers
                     Message = $"不支持的币种【{model.Currency}】！\n当前支持的币种参数有：{string.Join(", ", GetActiveCurrency(_chains))}"
                 });
             }
-            if (model.ActualAmount <= 0)
+            var IsCustomAmount = model.IsCustomAmount ?? false;
+            if (model.ActualAmount <= 0 && !IsCustomAmount)
             {
                 return Json(new ReturnData
                 {
                     Message = "金额有误！"
                 });
+            }
+            var UseDynamicAddress = _configuration.GetValue("UseDynamicAddress", true);
+            if (!UseDynamicAddress && IsCustomAmount)
+            {
+                return Json(new ReturnData
+                {
+                    Message = "仅使用动态地址时可使用此参数！"
+                });
+            }
+            else
+            {
+                if (IsCustomAmount && model.ActualAmount != 0)
+                {
+                    return Json(new ReturnData
+                    {
+                        Message = "使用动态收款金额时，实付金额必须为0！"
+                    });
+                }
             }
             //订单号已存在
             var hasOrder = await _repository.Where(x => x.OutOrderId == model.OutOrderId && x.Currency == model.Currency)
@@ -256,7 +275,6 @@ namespace TokenPay.Controllers
                 RedirectUrl = model.RedirectUrl,
                 PassThroughInfo = model.PassThroughInfo,
             };
-            var UseDynamicAddress = _configuration.GetValue("UseDynamicAddress", true);
             try
             {
                 if (UseDynamicAddress)
@@ -264,6 +282,12 @@ namespace TokenPay.Controllers
                     var (Address, Amount) = await GetUseTokenDynamicAdress(model);
                     order.ToAddress = Address;
                     order.Amount = Amount;
+                    if (IsCustomAmount)
+                    {
+                        order.IsCustomAmount = IsCustomAmount;
+                        order.MinCustomAmount = model.MinCustomAmount;
+                        order.MaxCustomAmount = model.MaxCustomAmount;
+                    }
                 }
                 else
                 {
@@ -279,11 +303,11 @@ namespace TokenPay.Controllers
                     Message = e.Message
                 });
             }
-            if (order.Amount <= 0)
+            if (order.Amount <= 0 && !order.IsCustomAmount)
             {
                 return Json(new ReturnData
                 {
-                    Message = "此订单金额过低！"
+                    Message = "此订单金额有误，请检查币种汇率是否正确！"
                 });
             }
             await _repository.InsertAsync(order);
@@ -309,6 +333,9 @@ namespace TokenPay.Controllers
                 { nameof(order.ActualAmount), order.ActualAmount.ToString() },
                 { nameof(order.ToAddress), order.ToAddress },
                 { nameof(order.PassThroughInfo), order.PassThroughInfo },
+                { nameof(order.IsCustomAmount), order.IsCustomAmount },
+                { nameof(order.MinCustomAmount), order.MinCustomAmount },
+                { nameof(order.MaxCustomAmount), order.MaxCustomAmount },
                 { "BaseCurrency", BaseCurrency },
                 { "BlockChainName", order.Currency.ToBlockchainEnglishName(_chains) },
                 { "CurrencyName", order.Currency.ToCurrency(_chains) },
@@ -363,7 +390,7 @@ namespace TokenPay.Controllers
             {
                 throw new TokenPayException("汇率有误！");
             }
-            var Amount = (model.ActualAmount / rate).ToRound(GetDecimals(model.Currency,_configuration)); //因为每个用户一个独立支付地址，所以此处金额计算逻辑与静态地址不同
+            var Amount = (model.ActualAmount / rate).ToRound(GetDecimals(model.Currency, _configuration)); //因为每个用户一个独立支付地址，所以此处金额计算逻辑与静态地址不同
             return (UseTokenAdress, Amount);
         }
         /// <summary>

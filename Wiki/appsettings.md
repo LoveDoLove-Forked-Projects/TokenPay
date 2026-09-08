@@ -1,4 +1,4 @@
-# `appsettings.json` 配置说明
+# `appsettings.json` 配置说明（也可直接阅读配置文件，内有完善注释）
 
 `appsettings.json` 是 TokenPay 的主配置文件。建议从 [`appsettings.Example.json`](../src/TokenPay/appsettings.Example.json) 复制后修改，不要直接覆盖保存有真实配置的文件。
 
@@ -14,6 +14,14 @@
 - `Admin`：仅在需要后台管理页面时配置，详见 [后台管理说明](admin.md)。
 
 不要把包含真实密钥、机器人 Token、钱包地址私钥或管理员密码哈希的配置文件提交到公开仓库。
+
+## 支付页主题切换(主题均支持中英文)
+>见配置文件末尾`ThemeName`字段，目前内置了五套支付页风格，都带有中文、英文两个语言。
+- 此字段留空则使用默认经典页面
+- `v1-cyber-dark` 暗黑科技毛玻璃风 
+- `v2-apple-minimal` 极简苹果风 
+- `v3-neo-crypto` 渐变极客风 
+- `v4-swiss-editorial` 瑞士杂志/新丑风
 
 ## 基础配置
 

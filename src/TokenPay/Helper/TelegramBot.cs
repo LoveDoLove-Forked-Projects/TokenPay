@@ -35,7 +35,24 @@ namespace TokenPay.Helper
             Log.Logger.Information("机器人启动成功！我是{@result}。", result.Result.FirstName);
             BotInfo = result.Result;
             await SendTextMessageAsync("你好呀~我是TokenPay通知机器人！", cancellationToken: cancellationToken);
+            await SendWarningMessage(cancellationToken);
             return result;
+        }
+        private async Task SendWarningMessage(CancellationToken cancellationToken = default)
+        {
+            var warningMessage = string.Empty;
+            if (!_configuration.GetValue<bool>("Signature:UseHmacSha256"))
+            {
+                warningMessage += "⚠️⚠️⚠️⚠️⚠️\n当前配置中未启用HMAC-SHA256签名验证，仍在使用MD5签名验证方式，可能存在安全风险，请尽快启用新版签名验证方式。\n\n<b>注意：启用后需要同步修改对接方签名验证为HMAC-SHA256</b>\n\n";
+            }
+            if (_configuration.GetValue<bool>("Signature:AllowInsecureDevelopment"))
+            {
+                warningMessage += "⚠️⚠️⚠️⚠️⚠️\n当前配置中启用了允许不安全的开发环境模式，可能存在安全风险，请尽快关闭该选项。\n\n<b>注意：启用此参数将会忽略签名验证，请勿用于生产环境</b>\n\n";
+            }
+            if (!string.IsNullOrEmpty(warningMessage))
+            {
+                await SendTextMessageAsync(warningMessage, cancellationToken: cancellationToken);
+            }
         }
         public async Task<TelegramResult<SendMessageResult>?> SendTextMessageAsync(string Message, string? TelegramApiHost = null, CancellationToken? cancellationToken = null)
         {
