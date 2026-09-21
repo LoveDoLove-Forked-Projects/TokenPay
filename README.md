@@ -123,4 +123,4 @@ USDT-TRC20打赏地址: TKGTx4pCKiKQbk8evXHTborfZn754TGViP
 亦不鼓励和支持任何"挖矿"，"炒币"，"虚拟币ICO"等非法行为
 虚拟币市场行为不受监管要求和控制，投资交易需谨慎，仅供学习区块链知识
 ```
-[![Stargazers over time](https://starchart.cc/LightCountry/TokenPay.svg)](https://starchart.cc/LightCountry/TokenPay)
+[![Star History Chart](https://api.star-history.com/svg?repos=LightCountry/TokenPay&type=Date)](https://www.star-history.com/#LightCountry/TokenPay&Date)
